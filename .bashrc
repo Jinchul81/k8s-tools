@@ -13,6 +13,17 @@ fi
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
+PEM_FILE=~/.ssh/2018.pem
+k8s_node2=
+k8s_node3=
+k8s_node4=
+k8s_node5=
+
+alias sshnode2="ssh -i ${PEM_FILE} centos@${k8s_node2}"
+alias sshnode3="ssh -i ${PEM_FILE} centos@${k8s_node3}"
+alias sshnode4="ssh -i ${PEM_FILE} centos@${k8s_node4}"
+alias sshnode5="ssh -i ${PEM_FILE} centos@${k8s_node5}"
+
 function kdelete_() {
   if [[ -z $1 ]]; then
     echo "ERROR: missing the first argument"
@@ -101,6 +112,7 @@ function kdelete_nfs_client() {
 
 # HELM
 
+
 function kdelete_tiller() {
   kubectl delete deployment --namespace=kube-system -l name=tiller --grace-period=30
   kget_all_pods
@@ -108,3 +120,11 @@ function kdelete_tiller() {
 
 export HELM_HOME=/root/.helm
 
+function get_curl() {
+  #local TOKEN=8c5b53.a56c711f1f1e7a34
+  local TOKEN=sohncw.metatronmetatron
+  local API_SERVER="https://1.1.1.1:6443"
+  #local API_SERVER="https://localhost:6443"
+  #curl -k -X GET -H "Authorization: Bearer ${TOKEN}" ${API_SERVER}/api/v1/nodes
+  curl -k -X GET -H "Authorization: Bearer ${TOKEN}" ${API_SERVER}/${1}
+}
