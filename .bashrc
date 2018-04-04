@@ -13,11 +13,11 @@ fi
 
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
-PEM_FILE=~/.ssh/2018.pem
-k8s_node2=
-k8s_node3=
-k8s_node4=
-k8s_node5=
+PEM_FILE=~/.ssh/metatron_2018.pem
+k8s_node2=ec2-13-125-155-166.ap-northeast-2.compute.amazonaws.com
+k8s_node3=ec2-13-125-63-45.ap-northeast-2.compute.amazonaws.com
+k8s_node4=ec2-13-125-209-48.ap-northeast-2.compute.amazonaws.com
+k8s_node5=ec2-13-125-110-1.ap-northeast-2.compute.amazonaws.com
 
 alias sshnode2="ssh -i ${PEM_FILE} centos@${k8s_node2}"
 alias sshnode3="ssh -i ${PEM_FILE} centos@${k8s_node3}"
@@ -42,6 +42,14 @@ function kdesc() {
 
 function klogs() {
   kubectl logs $1
+}
+
+function kgetpodname() {
+  kubectl get pods -l k8s-app=$1 -o name
+}
+
+function kgetkubepodname() {
+  kubectl get pods --namespace=kube-system -l k8s-app=$1 -o name
 }
 
 function kdelete_sts() {
@@ -86,11 +94,14 @@ alias kget_sts="kubectl get sts --all-namespaces"
 alias kget_pvc="kubectl get pvc --all-namespaces"
 alias kget_pv="kubectl get pv --all-namespaces"
 alias kget_sc="kubectl get sc --all-namespaces"
+alias kget_ep="kubectl get ep --all-namespaces"
 alias kget_deploy="kubectl get deploy --all-namespaces"
 alias kget_clusterrolebinding="kubectl get clusterrolebinding"
 
 alias kdelete_all_pvc="kubectl delete pvc --all"
 alias kdelete_all_pv="kubectl delete pv --all"
+
+alias netstatlisten="netstat -anp | grep LISTEN | less"
 
 function kdelete_web() {
   kdelete_sts web
@@ -123,8 +134,42 @@ export HELM_HOME=/root/.helm
 function get_curl() {
   #local TOKEN=8c5b53.a56c711f1f1e7a34
   local TOKEN=sohncw.metatronmetatron
-  local API_SERVER="https://1.1.1.1:6443"
+  local API_SERVER="https://13.125.181.112:6443"
   #local API_SERVER="https://localhost:6443"
   #curl -k -X GET -H "Authorization: Bearer ${TOKEN}" ${API_SERVER}/api/v1/nodes
   curl -k -X GET -H "Authorization: Bearer ${TOKEN}" ${API_SERVER}/${1}
 }
+
+# Druid
+
+HOST_IP=$(hostname -I | awk '{print $1}')
+function druid_ingest() {
+  curl -X 'POST' -H 'Content-Type: application/json' -d @${1} ${HOST_IP}:8090/druid/indexer/v1/task
+}
+
+function druid_query() {
+  curl -L -H 'Content-Type: application/json' -XPOST --data-binary @${1} http://${HOST_IP}:8082/druid/v2/?pretty
+}
+
+function chart_delete_druid() {
+  helm delete --purge druid
+#kget_pvc | grep druid | awk '{print "kubectl delete pvc " $2}' | sh
+}
+
+function chart_install_druid_with_load_balance() {
+  helm install --name druid \
+  --set service.type=LoadBalancer \
+  --set service.externalIPs=${HOST_IP} \
+  ./druid --dry-run --debug | tee druid_debug.txt
+}
+
+function chart_install_druid() {
+  helm install --name druid ./druid --debug | tee druid_debug.txt
+}
+
+function chart_dryrun_druid() {
+  helm install --name druid \
+  ./druid --dry-run --debug | tee druid_debug.txt
+}
+
+
