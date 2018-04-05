@@ -15,7 +15,7 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 
 PEM_FILE=~/.ssh/metatron_2018.pem
 k8s_node2=ec2-13-125-155-166.ap-northeast-2.compute.amazonaws.com
-k8s_node3=ec2-13-125-63-45.ap-northeast-2.compute.amazonaws.com
+k8s_node3=ec2-52-79-136-230.ap-northeast-2.compute.amazonaws.com
 k8s_node4=ec2-13-125-209-48.ap-northeast-2.compute.amazonaws.com
 k8s_node5=ec2-13-125-110-1.ap-northeast-2.compute.amazonaws.com
 
@@ -84,7 +84,17 @@ function kstop_pod() {
   kubectl delete deployment $1 --grace-period=30
 }
 
-alias ktty="kubectl run -i --tty mytty --image=metatronx/hadoop -it --rm --restart=Never -- bash"
+function kconnect() {
+  if [[ -z $2 ]]; then
+    KSHELL="/bin/bash"
+  else
+    KSHELL=$2
+  fi
+
+  kubectl exec -ti $1 -- ${KSHELL}
+}
+
+#alias ktty="kubectl run -i --tty mytty --image=metatronx/hadoop -it --rm --restart=Never -- bash"
 alias ktty_mysql="kubectl run -i --tty mytty-mysql --image=centos/mysql-57-centos7 -it --rm --restart=Never -- bash"
 alias kget_nodes="kubectl get nodes --all-namespaces"
 alias kget_pods="kubectl get pods --all-namespaces --show-all"
@@ -153,18 +163,28 @@ function druid_query() {
 
 function chart_delete_druid() {
   helm delete --purge druid
-#kget_pvc | grep druid | awk '{print "kubectl delete pvc " $2}' | sh
+}
+
+function chart_delete_druid_pvc() {
+  kget_pvc | grep druid | awk '{print "kubectl delete pvc " $2}' | sh
 }
 
 function chart_install_druid_with_load_balance() {
   helm install --name druid \
   --set service.type=LoadBalancer \
   --set service.externalIPs=${HOST_IP} \
-  ./druid --dry-run --debug | tee druid_debug.txt
+  ./druid --debug | tee druid_debug.txt
 }
 
 function chart_install_druid() {
   helm install --name druid ./druid --debug | tee druid_debug.txt
+}
+
+function chart_dryrun_druid_with_load_balance() {
+  helm install --name druid \
+  --set service.type=LoadBalancer \
+  --set service.externalIPs=${HOST_IP} \
+  ./druid --dry-run --debug | tee druid_debug.txt
 }
 
 function chart_dryrun_druid() {
