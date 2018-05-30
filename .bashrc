@@ -192,4 +192,43 @@ function chart_dryrun_druid() {
   ./druid --dry-run --debug | tee druid_debug.txt
 }
 
+function _console() {
+  kubectl exec -ti $1  -- /bin/sh
+}
+
+function console_druid_mm() {
+  _console druid-middlemanager-0
+}
+
+function console_druid_broker() {
+  _console druid-broker-0
+}
+
+function console_druid_overlord() {
+  _console druid-overlord-0
+}
+
+function console_druid_coordinator() {
+  _console druid-coordinator-0
+}
+
+function console_druid_historical() {
+  _console druid-historical-0
+}
+
+function console_hdfs_nn() {
+  _console hadoop-hadoop-hdfs-nn-0
+}
+
+function console_hdfs_dn() {
+  _console hadoop-hadoop-hdfs-dn-0
+}
+
+function console_mysql() {
+  _console mysql-mysqlha-0
+}
+
+function console_zk() {
+  _console zk-zookeeper-0
+}
 
